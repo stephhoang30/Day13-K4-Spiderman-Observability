@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import Derivation from "@/components/Derivation";
 import Header from "@/components/Header";
+import LiveFeed from "@/components/LiveFeed";
 import Panel from "@/components/panels";
 import Pipeline from "@/components/Pipeline";
-import type { MetricsResponse } from "@/lib/types";
+import type { LiveEvent, MetricsResponse } from "@/lib/types";
 
 import styles from "./page.module.css";
 
@@ -14,6 +15,10 @@ const DEFAULT_REFRESH_SECONDS = 30;
 const DEFAULT_TIME_RANGE_MINUTES = 60;
 /** Mỗi chặng pipeline sáng bao lâu khi chạy chế độ demo. */
 const DEMO_STEP_MS = 2200;
+/** Số dòng giữ lại trong live feed. */
+const FEED_LIMIT = 40;
+/** Cửa sổ tính "dòng/phút" cho live feed. */
+const RATE_WINDOW_MS = 60_000;
 
 export default function DashboardPage() {
   const [data, setData] = useState<MetricsResponse | null>(null);
@@ -24,11 +29,68 @@ export default function DashboardPage() {
   const [stageIndex, setStageIndex] = useState<number | null>(null);
   const [openPanelId, setOpenPanelId] = useState<string | null>(null);
   const [demoRunning, setDemoRunning] = useState(false);
+  const [liveConnected, setLiveConnected] = useState(false);
+  const [feed, setFeed] = useState<LiveEvent[]>([]);
+  const seenKeys = useRef<Set<string>>(new Set());
 
   const refreshSeconds = data?.dashboard.refreshSeconds ?? DEFAULT_REFRESH_SECONDS;
   const timeRangeMinutes = data?.dashboard.timeRangeMinutes ?? DEFAULT_TIME_RANGE_MINUTES;
 
-  // Auto refresh theo `dashboard.refresh_seconds` của config/dashboard.yaml.
+  // Gộp payload mới vào state, đồng thời nối các dòng log mới vào live feed.
+  const applyPayload = useCallback((payload: MetricsResponse) => {
+    setData(payload);
+    setFetchError(null);
+    setLastUpdatedMs(Date.now());
+    setLoaded(true);
+
+    const incoming = payload.liveEvents ?? [];
+    if (incoming.length === 0) return;
+
+    // Dedup PHẢI làm ngoài updater: React StrictMode gọi updater hai lần, nếu
+    // mutate Set bên trong thì lượt thứ hai sẽ lọc sạch và feed luôn rỗng.
+    const key = (event: LiveEvent) =>
+      `${event.ts}|${event.event}|${event.correlationId ?? ""}`;
+    const fresh = incoming.filter((event) => !seenKeys.current.has(key(event)));
+    if (fresh.length === 0) return;
+    for (const event of fresh) seenKeys.current.add(key(event));
+
+    // Mới nhất lên đầu; updater thuần nên gọi lại bao nhiêu lần cũng ra một kết quả.
+    const ordered = [...fresh].reverse();
+    setFeed((prev) => {
+      const next = [...ordered, ...prev].slice(0, FEED_LIMIT);
+      if (seenKeys.current.size > FEED_LIMIT * 20) {
+        seenKeys.current = new Set(next.map(key));
+      }
+      return next;
+    });
+  }, []);
+
+  // Đường trực tiếp: SSE đẩy ngay khi data/logs.jsonl đổi.
+  // EventSource tự reconnect nên không cần vòng retry thủ công.
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof EventSource === "undefined") return;
+    const source = new EventSource("/api/stream");
+
+    source.addEventListener("metrics", (event) => {
+      try {
+        applyPayload(JSON.parse((event as MessageEvent).data) as MetricsResponse);
+        setLiveConnected(true);
+      } catch {
+        /* frame hỏng thì bỏ qua, polling vẫn giữ dashboard đúng */
+      }
+    });
+    source.addEventListener("ping", () => setLiveConnected(true));
+    source.onopen = () => setLiveConnected(true);
+    source.onerror = () => setLiveConnected(false);
+
+    return () => {
+      source.close();
+      setLiveConnected(false);
+    };
+  }, [applyPayload]);
+
+  // Đường bảo đảm: polling theo `dashboard.refresh_seconds` của contract.
+  // Vẫn chạy song song với SSE để dashboard đúng kể cả khi stream chết.
   useEffect(() => {
     let cancelled = false;
 
@@ -37,8 +99,7 @@ export default function DashboardPage() {
         const res = await fetch("/api/metrics", { cache: "no-store" });
         const payload = (await res.json()) as MetricsResponse;
         if (cancelled) return;
-        setData(payload);
-        setFetchError(null);
+        applyPayload(payload);
       } catch (err) {
         if (cancelled) return;
         setFetchError(
@@ -59,7 +120,7 @@ export default function DashboardPage() {
       clearTimeout(first);
       clearInterval(timer);
     };
-  }, [refreshSeconds]);
+  }, [refreshSeconds, applyPayload]);
 
   // Nhịp 1 giây chỉ để hiển thị đếm ngược tới lần refresh kế tiếp.
   useEffect(() => {
@@ -78,6 +139,10 @@ export default function DashboardPage() {
   const panels = data?.panels ?? [];
   const passCount = panels.filter((p) => p.pass).length;
   const stages = data?.pipeline?.stages ?? [];
+  // Nhịp log thật trong 60 giây gần nhất, tính theo ts của chính log.
+  const eventsPerMinute = feed.filter(
+    (event) => nowMs - Date.parse(event.ts) < RATE_WINDOW_MS,
+  ).length;
   const openPanel = panels.find((p) => p.id === openPanelId) ?? null;
   const openDerivation =
     data?.pipeline?.derivations.find((d) => d.panelId === openPanelId) ?? null;
@@ -127,6 +192,7 @@ export default function DashboardPage() {
         secondsToRefresh={secondsToRefresh}
         timeRangeMinutes={timeRangeMinutes}
         refreshSeconds={refreshSeconds}
+        liveConnected={liveConnected}
       />
 
       <main className={styles.main}>
@@ -189,6 +255,12 @@ export default function DashboardPage() {
                 {demoRunning ? "■ Dừng demo" : "▶ Chạy demo pipeline"}
               </button>
             </div>
+
+            <LiveFeed
+              events={feed}
+              connected={liveConnected}
+              eventsPerMinute={eventsPerMinute}
+            />
 
             {stages.length > 0 ? (
               <Pipeline

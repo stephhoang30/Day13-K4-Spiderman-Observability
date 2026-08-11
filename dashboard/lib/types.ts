@@ -162,6 +162,17 @@ export interface PipelineData {
   derivations: PanelDerivation[];
 }
 
+/** Một dòng log rút gọn cho live feed — đủ để nhận ra request nào vừa chạy. */
+export interface LiveEvent {
+  ts: string;
+  event: string;
+  correlationId: string | null;
+  feature: string | null;
+  latencyMs: number | null;
+  errorType: string | null;
+  costUsd: number | null;
+}
+
 export interface MetricsResponse {
   status: DashboardStatus;
   /** Thông điệp hiển thị khi chưa có dữ liệu hoặc có lỗi đọc file. */
@@ -187,4 +198,6 @@ export interface MetricsResponse {
   panels: PanelData[];
   /** Lớp giải thích: đường đi dữ liệu và cách tính từng panel. */
   pipeline: PipelineData | null;
+  /** Log vừa xuất hiện — với SSE là phần thật sự mới, với polling là 12 dòng cuối. */
+  liveEvents: LiveEvent[];
 }

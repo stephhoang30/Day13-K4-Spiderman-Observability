@@ -160,3 +160,10 @@
   border-radius: 4px;
   padding: 1px 6px;
 }
+
+/* Chip trạng thái kênh trực tiếp (SSE). */
+.chipLive {
+  background: var(--pass-soft);
+  border-color: rgba(10, 122, 72, 0.35);
+  color: var(--pass);
+}

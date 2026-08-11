@@ -47,6 +47,30 @@ Dòng JSON hỏng bị bỏ qua và đếm riêng (hiện ở thanh header) thay
 
 Percentile dùng nearest-rank với đúng công thức index của `app/metrics.py` (kể cả banker's rounding của Python) để số trên dashboard khớp `/metrics`.
 
+## Cập nhật thời gian thực
+
+Dashboard có hai đường lấy dữ liệu chạy song song:
+
+| Đường | Endpoint | Khi nào cập nhật |
+|---|---|---|
+| Trực tiếp | `/api/stream` (SSE) | **ngay khi `data/logs.jsonl` đổi** (poll mtime/size mỗi 400 ms) |
+| Bảo đảm | `/api/metrics` | mỗi 30 giây, đúng `dashboard.refresh_seconds` của contract |
+
+Polling **không** bị tắt khi SSE hoạt động — nó là lưới an toàn, nếu stream chết thì dashboard vẫn đúng sau tối đa 30 giây. Chip `LIVE SSE` trên header chuyển sang `OFFLINE polling` khi mất kết nối; `EventSource` tự reconnect.
+
+Panel **"Log đang chảy vào"** hiển thị các dòng log vừa xuất hiện kèm correlation ID, feature, latency và cost, dòng mới nhất nháy một cái. Khi demo, chạy load test rồi nhìn dòng chảy vào là bằng chứng trực quan nhất rằng dashboard đọc log thật:
+
+```bash
+python scripts/load_test.py --concurrency 5
+```
+
+Chi tiết kỹ thuật đáng lưu ý:
+
+- Dùng `fs.watchFile` (poll stat) thay vì `fs.watch` vì `fs.watch` hay bỏ sót sự kiện append trên macOS.
+- Có gộp frame: một burst load test không đẩy hàng chục frame liên tiếp, tối thiểu 250 ms giữa hai lần đẩy.
+- Heartbeat 15 giây giữ kết nối để proxy không cắt khi log im ắng.
+- Dedup dòng log làm **ngoài** `setState` updater — mutate `Set` bên trong updater sẽ hỏng vì React StrictMode gọi updater hai lần.
+
 ## Lớp giải thích dùng khi demo
 
 Ngoài 6 panel, trang có thêm hai thứ để trình bày trước lớp:
@@ -76,8 +100,11 @@ Lệch nhau nghĩa là có bug thật, không phải sai số hiển thị.
 ## Cấu trúc
 
 ```text
-app/api/metrics/route.ts   đọc log + contract, trả JSON cho client
-app/page.tsx               bố cục, auto refresh, demo mode
+app/api/metrics/route.ts   polling 30s theo contract
+app/api/stream/route.ts    SSE, đẩy ngay khi data/logs.jsonl đổi
+app/page.tsx               bố cục, SSE + polling, demo mode
+components/LiveFeed.tsx    đuôi log trực tiếp
+lib/payload.ts             dựng payload dùng chung cho cả hai endpoint
 components/Pipeline.tsx    sơ đồ 8 chặng
 components/Derivation.tsx  bảng "đo như thế nào" + log thật
 components/panels.tsx      6 panel

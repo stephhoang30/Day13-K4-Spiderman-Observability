@@ -11,12 +11,14 @@ export default function Header({
   secondsToRefresh,
   timeRangeMinutes,
   refreshSeconds,
+  liveConnected,
 }: {
   data: MetricsResponse | null;
   lastUpdated: Date | null;
   secondsToRefresh: number;
   timeRangeMinutes: number;
   refreshSeconds: number;
+  liveConnected: boolean;
 }) {
   const win = data?.window ?? { from: null, to: null };
   const src = data?.source;
@@ -36,6 +38,18 @@ export default function Header({
         </div>
 
         <div className={styles.chips}>
+          {/* Live là kênh phụ đẩy ngay khi file log đổi; polling 30s bên dưới
+              vẫn là đường bảo đảm theo contract. */}
+          <span
+            className={`${styles.chip} ${liveConnected ? styles.chipLive : styles.chipPlain}`}
+          >
+            <span
+              className={`${styles.live} ${liveConnected ? "" : styles.liveIdle}`}
+              aria-hidden="true"
+            />
+            <span className={styles.chipLabel}>{liveConnected ? "LIVE" : "OFFLINE"}</span>
+            <span className={styles.mono}>{liveConnected ? "SSE" : "polling"}</span>
+          </span>
           <span className={`${styles.chip} ${styles.chipBlue}`}>
             <span className={styles.chipLabel}>Time range</span>
             <span className={styles.mono}>{timeRangeMinutes} phút</span>
