@@ -9,6 +9,7 @@ import {
   readLogs,
 } from "@/lib/contract";
 import { buildPanels, filterWindow, resolveWindow } from "@/lib/metrics";
+import { buildPipeline } from "@/lib/pipeline";
 import type { MetricsResponse } from "@/lib/types";
 
 // Luôn đọc lại logs.jsonl trên từng request — dashboard phải phản ánh file
@@ -50,6 +51,7 @@ export async function GET() {
         latestTs: null,
       },
       panels: [],
+      pipeline: null,
     };
     return Response.json(body, { status: 500 });
   }
@@ -80,11 +82,14 @@ export async function GET() {
         latestTs: null,
       },
       panels: [],
+      pipeline: null,
     };
     return Response.json(body);
   }
 
   const inWindow = filterWindow(logs.records, window);
+  const panels = buildPanels(contract, inWindow, window);
+  const passCount = panels.filter((panel) => panel.pass).length;
   const body: MetricsResponse = {
     status: "ok",
     message: null,
@@ -103,7 +108,8 @@ export async function GET() {
       inWindow: inWindow.length,
       latestTs: new Date(window.toMs).toISOString(),
     },
-    panels: buildPanels(contract, inWindow, window),
+    panels,
+    pipeline: buildPipeline(contract, logs, inWindow, window, passCount),
   };
 
   return Response.json(body);

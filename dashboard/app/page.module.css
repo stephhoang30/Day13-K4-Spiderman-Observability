@@ -187,3 +187,62 @@
   border-radius: 4px;
   padding: 1px 5px;
 }
+
+/* ----------------------- demo mode + "đo như thế nào" ---------------------- */
+
+.demoButton {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  margin-left: auto;
+  background: var(--brand-blue);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 7px 15px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.demoButton:hover {
+  background: #0f3f73;
+}
+
+.demoStop {
+  background: var(--brand-red);
+}
+
+.demoStop:hover {
+  background: #a51b20;
+}
+
+.panelSlot {
+  display: flex;
+  flex-direction: column;
+}
+
+.explain {
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  align-self: flex-start;
+  margin-top: 7px;
+  background: var(--surface);
+  color: var(--brand-blue);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  padding: 6px 13px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.explain:hover {
+  background: var(--brand-blue-soft);
+  border-color: var(--brand-blue);
+}
+
+.explainOpen {
+  background: var(--brand-blue);
+  border-color: var(--brand-blue);
+  color: #fff;
+}

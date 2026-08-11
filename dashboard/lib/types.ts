@@ -112,6 +112,56 @@ export type PanelData =
 
 export type DashboardStatus = "ok" | "no-data" | "error";
 
+/**
+ * Một chặng trong đường đi của dữ liệu, từ lúc request vào API tới lúc ra
+ * verdict PASS/BREACH. Dùng cho sơ đồ pipeline khi demo.
+ */
+export interface PipelineStage {
+  id: string;
+  /** Tên ngắn hiển thị trong sơ đồ. */
+  label: string;
+  /** Thành phần thật trong repo chịu trách nhiệm chặng này. */
+  source: string;
+  /** Một câu giải thích chặng này làm gì. */
+  detail: string;
+  /** Con số thật đang chảy qua chặng này. */
+  value: number;
+  valueLabel: string;
+  /** Các số phụ, ví dụ tách theo loại event. */
+  breakdown?: { label: string; value: number }[];
+}
+
+/** Một bước trong cách tính ra con số của panel. */
+export interface DerivationStep {
+  /** Việc đang làm: lọc, lấy field, áp công thức, so ngưỡng. */
+  kind: "source" | "window" | "filter" | "field" | "formula" | "threshold";
+  label: string;
+  /** Biểu thức đúng như đang chạy, đã thay số thật vào. */
+  expr: string;
+  result: string;
+}
+
+/** Một dòng log thật đóng góp vào panel, kèm field cần soi. */
+export interface DerivationSample {
+  raw: string;
+  highlight: string[];
+}
+
+export interface PanelDerivation {
+  panelId: string;
+  /** Câu chốt: vì sao panel này PASS hay BREACH. */
+  verdict: string;
+  steps: DerivationStep[];
+  samples: DerivationSample[];
+  /** Ghi chú dành riêng cho lúc bảo vệ, ví dụ vì sao dùng P95. */
+  note?: string;
+}
+
+export interface PipelineData {
+  stages: PipelineStage[];
+  derivations: PanelDerivation[];
+}
+
 export interface MetricsResponse {
   status: DashboardStatus;
   /** Thông điệp hiển thị khi chưa có dữ liệu hoặc có lỗi đọc file. */
@@ -135,4 +185,6 @@ export interface MetricsResponse {
     latestTs: string | null;
   };
   panels: PanelData[];
+  /** Lớp giải thích: đường đi dữ liệu và cách tính từng panel. */
+  pipeline: PipelineData | null;
 }

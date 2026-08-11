@@ -1,15 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
+import Derivation from "@/components/Derivation";
 import Header from "@/components/Header";
 import Panel from "@/components/panels";
+import Pipeline from "@/components/Pipeline";
 import type { MetricsResponse } from "@/lib/types";
 
 import styles from "./page.module.css";
 
 const DEFAULT_REFRESH_SECONDS = 30;
 const DEFAULT_TIME_RANGE_MINUTES = 60;
+/** Mỗi chặng pipeline sáng bao lâu khi chạy chế độ demo. */
+const DEMO_STEP_MS = 2200;
 
 export default function DashboardPage() {
   const [data, setData] = useState<MetricsResponse | null>(null);
@@ -17,6 +21,9 @@ export default function DashboardPage() {
   const [loaded, setLoaded] = useState(false);
   const [lastUpdatedMs, setLastUpdatedMs] = useState<number | null>(null);
   const [nowMs, setNowMs] = useState(0);
+  const [stageIndex, setStageIndex] = useState<number | null>(null);
+  const [openPanelId, setOpenPanelId] = useState<string | null>(null);
+  const [demoRunning, setDemoRunning] = useState(false);
 
   const refreshSeconds = data?.dashboard.refreshSeconds ?? DEFAULT_REFRESH_SECONDS;
   const timeRangeMinutes = data?.dashboard.timeRangeMinutes ?? DEFAULT_TIME_RANGE_MINUTES;
@@ -70,6 +77,47 @@ export default function DashboardPage() {
 
   const panels = data?.panels ?? [];
   const passCount = panels.filter((p) => p.pass).length;
+  const stages = data?.pipeline?.stages ?? [];
+  const openPanel = panels.find((p) => p.id === openPanelId) ?? null;
+  const openDerivation =
+    data?.pipeline?.derivations.find((d) => d.panelId === openPanelId) ?? null;
+
+  // Chế độ demo: chạy tuần tự qua từng chặng pipeline rồi tự dừng ở chặng cuối.
+  useEffect(() => {
+    if (!demoRunning || stages.length === 0) return;
+    const id = setInterval(() => {
+      setStageIndex((prev) => {
+        const next = prev === null ? 0 : prev + 1;
+        if (next >= stages.length) {
+          setDemoRunning(false);
+          return stages.length - 1;
+        }
+        return next;
+      });
+    }, DEMO_STEP_MS);
+    return () => clearInterval(id);
+  }, [demoRunning, stages.length]);
+
+  const startDemo = useCallback(() => {
+    setOpenPanelId(null);
+    setStageIndex(0);
+    setDemoRunning(true);
+  }, []);
+
+  const stopDemo = useCallback(() => {
+    setDemoRunning(false);
+    setStageIndex(null);
+  }, []);
+
+  const selectStage = useCallback((index: number | null) => {
+    setDemoRunning(false);
+    setStageIndex(index);
+  }, []);
+
+  const togglePanel = useCallback((id: string) => {
+    setDemoRunning(false);
+    setOpenPanelId((prev) => (prev === id ? null : id));
+  }, []);
 
   return (
     <div className={styles.page}>
@@ -133,11 +181,47 @@ export default function DashboardPage() {
               <span className={styles.summaryTotal}>
                 {passCount}/{panels.length} panel đạt threshold
               </span>
+              <button
+                type="button"
+                className={`${styles.demoButton} ${demoRunning ? styles.demoStop : ""}`}
+                onClick={demoRunning ? stopDemo : startDemo}
+              >
+                {demoRunning ? "■ Dừng demo" : "▶ Chạy demo pipeline"}
+              </button>
             </div>
+
+            {stages.length > 0 ? (
+              <Pipeline
+                stages={stages}
+                activeIndex={stageIndex}
+                onSelect={selectStage}
+                demoRunning={demoRunning}
+              />
+            ) : null}
+
+            {openPanel && openDerivation ? (
+              <Derivation
+                panel={openPanel}
+                derivation={openDerivation}
+                onClose={() => setOpenPanelId(null)}
+              />
+            ) : null}
 
             <div className={styles.grid}>
               {panels.map((p) => (
-                <Panel key={p.id} panel={p} />
+                <div key={p.id} className={styles.panelSlot}>
+                  <Panel panel={p} />
+                  <button
+                    type="button"
+                    className={`${styles.explain} ${
+                      openPanelId === p.id ? styles.explainOpen : ""
+                    }`}
+                    onClick={() => togglePanel(p.id)}
+                    aria-expanded={openPanelId === p.id}
+                  >
+                    {openPanelId === p.id ? "Đang xem cách đo ▲" : "Đo như thế nào? ▼"}
+                  </button>
+                </div>
               ))}
             </div>
           </>

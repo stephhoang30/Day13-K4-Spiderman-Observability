@@ -135,6 +135,8 @@ export interface LogRecord {
   ts: string;
   tsMs: number;
   event: string;
+  /** Dòng JSON nguyên văn trong file — dùng làm bằng chứng khi demo. */
+  raw: string;
   level?: string;
   service?: string;
   correlation_id?: string;
@@ -220,6 +222,7 @@ export async function readLogs(file: string): Promise<LogReadResult> {
       ts,
       tsMs,
       event,
+      raw: trimmed,
       level: stringOrUndefined(obj.level),
       service: stringOrUndefined(obj.service),
       correlation_id: stringOrUndefined(obj.correlation_id),
