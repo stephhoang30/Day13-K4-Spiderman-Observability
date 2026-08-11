@@ -56,8 +56,17 @@ Môi trường: Python 3.11.15, virtualenv `.venv`, đủ `requirements.txt`; La
 
   `scrub_event` được đăng ký **trước** `JSONRenderer` và `JsonlFileProcessor`, nên dữ liệu được che trước khi JSON được render và ghi xuống file. Bộ pattern hiện có: `email`, `phone_vn`, `cccd`, `credit_card`, `passport`, `address_vn`.
 
-- **Evidence trace waterfall:** *chờ E* — commit `a7d39da` "add rag and trace" đã bọc span cho RAG/LLM nhưng chưa được merge vào nhánh thu thập evidence này.
-- **Giải thích một span đáng chú ý:** *chờ waterfall của E.*
+- **Evidence trace waterfall:** commit `a7d39da` của E bọc span riêng cho RAG và LLM, nên trace tách được ba tầng thay vì một khối duy nhất. Ví dụ trace `c1c7e2ca4b0fec3660b8de79c224c155`:
+
+  ```text
+  agent.run        3548 ms
+  ├─ rag.retrieve  2500 ms   ← 70 % tổng thời gian
+  └─ llm.generate   153 ms
+  ```
+
+  *Còn thiếu:* ảnh chụp waterfall trên Langfuse UI.
+
+- **Giải thích một span đáng chú ý:** `rag.retrieve` chiếm 2500/3548 ms (~70 %) trong khi `llm.generate` chỉ 153 ms. Nếu không tách span, cả request chỉ hiện thành một khối 3548 ms và rất dễ kết luận nhầm là "LLM chậm" — đây chính là lý do phải bọc span cho từng sub-component chứ không chỉ đo ở tầng API.
 
 ## 4. Prompt versioning
 
@@ -85,6 +94,11 @@ HỢP LỆ: 6/6 panel có trong dashboard contract.
 Ứng dụng [`dashboard/`](../dashboard) viết bằng Next.js (App Router, TypeScript), giao diện sáng, đọc `data/logs.jsonl` **server-side** qua route `/api/metrics` và lấy threshold/unit/title trực tiếp từ `config/dashboard.yaml` — đổi contract thì dashboard đổi theo, không hard-code.
 
 Ảnh: [evidence/dashboard.png](evidence/dashboard.png) — nhìn được tên panel, đơn vị, time range 60 phút, auto refresh 30 giây, threshold/SLO line và trạng thái PASS/BREACH của từng panel.
+
+Ngoài 6 panel, trang có thêm lớp giải thích dùng khi demo trước lớp — ảnh: [evidence/dashboard-cach-do.png](evidence/dashboard-cach-do.png):
+
+- **Sơ đồ pipeline 8 chặng** từ `POST /chat` → gán correlation ID → agent xử lý → scrub PII + render JSON → ghi `data/logs.jsonl` → cắt cửa sổ 60 phút → tổng hợp 6 panel → so threshold. Mỗi chặng hiện số thật đang chảy qua và trỏ đúng file chịu trách nhiệm, bấm vào xem chặng đó làm gì. Có nút chạy demo tự động qua 8 chặng.
+- **"Đo như thế nào?"** dưới mỗi panel: mở ra từng bước tính ra con số (nguồn → cửa sổ → lọc event → lấy field → công thức → so ngưỡng) với số thật ở mỗi bước, kèm 1–2 **dòng log thật** đã tô đậm đúng field panel đang dùng. Ví dụ panel errors: `121 dòng hợp lệ` → `58 request_received` → `6 request_failed` → `6 ÷ 58 × 100 = 10,34 %` → `10,34 ≤ 2` → **BREACH**.
 
 ### 5.3 Đo đếm `error_rate_pct` (phần việc của C)
 
@@ -152,14 +166,27 @@ Ba alert symptom-based trong [`config/alert_rules.yaml`](../config/alert_rules.y
 
 ## 6. Điều tra challenge
 
-> Chủ trì: **E** — commit `a7d39da` đã thêm `docs/CP3_QA_INVESTIGATION.md` nhưng chưa merge vào nhánh này.
+> Chủ trì: **E** (Trần Văn Ngọc) — commit `a7d39da` bọc span RAG/LLM, `625bb6d` hoàn tất điều tra.
 
-- Challenge ID: `day13-k4-observability-v1` (Lab Coach đã release trong `config/challenge.json`)
+- Challenge ID: `day13-k4-observability-v1`
 - Thông số chính thức: `incident=rag_slow`, `seed=1304`, `affected_feature=monitoring`, `latency_threshold_ms=2000`, 5 query
-- Triệu chứng từ metrics: *chờ E*
-- Trace ID liên quan: *chờ E*
-- Log line/correlation ID liên quan: *chờ E* — hạ tầng đã sẵn sàng, correlation ID hoạt động nên nối được trace ↔ log
-- Root cause / Fix action / Preventive measure: *chờ E*
+- **Triệu chứng từ metrics:** sau load test challenge (5/5 HTTP 200), latency P95 = **3652 ms**, vượt ngưỡng chính thức 2000 ms.
+- **Trace ID liên quan:** `c1c7e2ca4b0fec3660b8de79c224c155` (session `k4-challenge-s02`). Waterfall: `agent.run` 3548 ms → `rag.retrieve` **2500 ms** → `llm.generate` 153 ms.
+- **Log line/correlation ID liên quan:** `response_sent`, correlation ID `req-c363f4c9`, feature `monitoring`, `latency_ms=3546`.
+- **Root cause:** incident `rag_slow` chèn delay 2.5 giây vào bước retrieval trong `app/mock_rag.py`. RAG là span chiếm gần như toàn bộ thời gian, **không phải** LLM — `llm.generate` chỉ 153 ms.
+- **Fix action:** đặt timeout + retry có giới hạn cho retrieval, cache kết quả phù hợp, và trả fallback an toàn khi retrieval vượt ngân sách thời gian.
+- **Preventive measure:** alert P95 riêng cho span RAG (không chỉ P95 tổng), và synthetic probe cho feature `monitoring`.
+- Evidence: [`evidence/cp3-challenge-evidence.md`](evidence/cp3-challenge-evidence.md), [`docs/CP3_QA_INVESTIGATION.md`](../docs/CP3_QA_INVESTIGATION.md). *Còn thiếu:* screenshot metric, waterfall và log.
+
+**Luồng Metrics → Traces → Logs khớp nhau ở cả ba lớp:**
+
+| Lớp | Bằng chứng | Con số |
+|---|---|---|
+| Metrics | P95 sau load test challenge | 3652 ms (ngưỡng 2000 ms) |
+| Traces | span `rag.retrieve` trong trace `c1c7e2ca…` | 2500 ms / tổng 3548 ms |
+| Logs | `response_sent` với `correlation_id=req-c363f4c9` | `latency_ms=3546` |
+
+Ba con số cùng chỉ về một nguyên nhân và lệch nhau chỉ vài ms (phần overhead ngoài span), nên kết luận đứng vững chứ không phải suy đoán từ một lớp.
 
 Lệnh chạy CP3:
 
@@ -174,14 +201,13 @@ python scripts/load_test.py --challenge --concurrency 5
 |---|---|---|---|
 | A — Nguyễn Quý Dương | `app/middleware.py`: `clear_contextvars()`, sinh correlation ID `req-<8 hex>` (ưu tiên header `x-request-id`), bind vào structlog, trả header `x-request-id` + `x-response-time-ms` | `ed10f83` | |
 | B — Hồ Văn Tâm | `app/logging_config.py` (đăng ký `scrub_event` trước JSONRenderer), `app/pii.py` (thêm `passport`, `address_vn`), `app/main.py` (log enrichment `user_id_hash`/`session_id`/`feature`/`model`/`env`) | `7433995`, `76de046`, `d3ce6a5`, `fc34782` | |
-| C — Hoàng Công Thành | `requests_received()` / `error_rate_pct()` + 3 field mới trong `snapshot()` ([app/metrics.py](../app/metrics.py)); 4 test mới ([tests/test_metrics.py](../tests/test_metrics.py)); [scripts/dashboard_metrics.py](../scripts/dashboard_metrics.py) tính 6 panel từ log để đối chiếu; dashboard Next.js trong [dashboard/](../dashboard); thu thập evidence dashboard | `<SHA>` | Trung bình che mất sự cố: khi `rag_slow` bật, P50 chỉ nhích nhẹ (1068 ms) còn P95 vọt lên 3653 ms — chỉ percentile cao mới lộ tail latency. Và một chỉ số chỉ đáng tin khi đo được từ hai nguồn độc lập (counter in-memory và file log) mà vẫn ra cùng kết quả. Ngoài ra, threshold phải nhất quán giữa dashboard, SLO và alert — lệch nhau thì sinh ra vùng mù không ai được báo. |
+| C — Hoàng Công Thành | `requests_received()` / `error_rate_pct()` + 3 field mới trong `snapshot()` ([app/metrics.py](../app/metrics.py)); 4 test mới ([tests/test_metrics.py](../tests/test_metrics.py)); [scripts/dashboard_metrics.py](../scripts/dashboard_metrics.py) tính 6 panel từ log để đối chiếu; dashboard Next.js 6 panel + lớp pipeline giải thích cách đo ([dashboard/](../dashboard)); thu thập evidence dashboard | `41d9fff`, `306afaa`, `85859ef`, `3c789b9` | Trung bình che mất sự cố: khi `rag_slow` bật, P50 chỉ nhích nhẹ (1068 ms) còn P95 vọt lên 3653 ms — chỉ percentile cao mới lộ tail latency. Và một chỉ số chỉ đáng tin khi đo được từ hai nguồn độc lập (counter in-memory và file log) mà vẫn ra cùng kết quả. Ngoài ra, threshold phải nhất quán giữa dashboard, SLO và alert — lệch nhau thì sinh ra vùng mù không ai được báo. |
 | D — Nguyễn Hoàng Bảo Minh | `config/slo.yaml` (4 SLI kèm giải thích), `config/alert_rules.yaml` (3 alert symptom-based), `docs/alerts.md` (runbook) | `29b0244` | |
-| E — Trần Văn Ngọc | Bọc trace cho RAG/LLM (`app/agent.py`, `app/mock_rag.py`, `app/mock_llm.py`, `tests/test_tracing_adapter.py`), `docs/CP3_QA_INVESTIGATION.md`, điều tra challenge | `a7d39da` | |
+| E — Trần Văn Ngọc | Bọc span RAG/LLM (`app/agent.py`, `app/mock_rag.py`, `app/mock_llm.py`, `tests/test_tracing_adapter.py`); điều tra CP3 và nối Metrics → Traces → Logs; `docs/CP3_QA_INVESTIGATION.md`, `submission/evidence/cp3-challenge-evidence.md` | `a7d39da`, `625bb6d` | |
 
 ### Việc còn lại trước khi nộp
 
-1. Merge nhánh mới nhất của E (`a7d39da`) và B (`fc34782`), chạy lại `pytest`, `validate_logs.py`, `validate_dashboard.py`.
-2. Tạo prompt `day13-chat` v1/v2 trên Langfuse, chạy hai label, promote rồi rollback `production`, lưu trace ID vào mục 4.
-3. E hoàn tất CP3 và điền mục 6.
-4. Thống nhất ngưỡng error rate giữa alert (5 %) và SLO/dashboard (2 %) — xem cảnh báo ở mục 5.6.
-5. Chụp bổ sung evidence còn thiếu theo [docs/grading-evidence.md](../docs/grading-evidence.md) (danh sách 10 traces, trace waterfall, 2 prompt version, rollback), cập nhật commit SHA cuối vào mục 1.
+1. **Prompt versioning (mục 4) — chưa ai làm.** Tạo prompt `day13-chat` v1/v2 trên Langfuse, chạy hai label, promote rồi rollback `production`, lưu trace ID. Đây là mục trống duy nhất còn lại và đang kéo điểm A1.
+2. **Thống nhất ngưỡng error rate** giữa alert (`> 5 %`) và SLO/dashboard (`≤ 2 %`) — xem cảnh báo ở mục 5.6.
+3. Chụp bổ sung ảnh còn thiếu theo [docs/grading-evidence.md](../docs/grading-evidence.md): danh sách ≥ 10 traces, trace waterfall trên Langfuse UI, hai prompt version, thao tác rollback, và ảnh metric/log của CP3.
+4. Cập nhật commit SHA cuối vào mục 1 sau khi merge xong toàn nhóm.

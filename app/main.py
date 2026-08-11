@@ -113,3 +113,12 @@ async def disable_incident(name: str) -> JSONResponse:
         return JSONResponse({"ok": True, "incidents": status()})
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+@app.exception_handler(Exception)
+async def generic_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    correlation_id = getattr(request.state, "correlation_id", "unknown")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": type(exc).__name__},
+        headers={"x-request-id": correlation_id},
+    )

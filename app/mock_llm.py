@@ -3,8 +3,10 @@ from __future__ import annotations
 import random
 import time
 from dataclasses import dataclass
+from typing import Any
 
 from .incidents import STATE
+from .tracing import observe
 
 
 @dataclass
@@ -24,7 +26,16 @@ class FakeLLM:
     def __init__(self, model: str = "claude-sonnet-4-5") -> None:
         self.model = model
 
-    def generate(self, prompt: str) -> FakeResponse:
+    @observe(name="llm.generate", as_type="generation", capture_input=False, capture_output=False)
+    def generate(
+        self,
+        prompt: str,
+        *,
+        metadata: dict[str, Any],
+        managed_prompt: Any | None,
+        langfuse_client: Any,
+    ) -> FakeResponse:
+        """Generate the answer as a child generation without storing prompt text."""
         time.sleep(0.15)
         input_tokens = max(20, len(prompt) // 4)
         output_tokens = random.randint(80, 180)
@@ -34,4 +45,16 @@ class FakeLLM:
             "Starter answer. Teams should improve this output logic and add better quality checks. "
             "Use retrieved context and keep responses concise."
         )
-        return FakeResponse(text=answer, usage=FakeUsage(input_tokens, output_tokens), model=self.model)
+        usage = FakeUsage(input_tokens, output_tokens)
+        cost_usd = round((input_tokens / 1_000_000) * 3 + (output_tokens / 1_000_000) * 15, 6)
+        langfuse_client.update_current_generation(
+            model=self.model,
+            metadata=metadata,
+            usage_details={
+                "prompt_tokens": usage.input_tokens,
+                "completion_tokens": usage.output_tokens,
+            },
+            cost_details={"total": cost_usd},
+            prompt=managed_prompt,
+        )
+        return FakeResponse(text=answer, usage=usage, model=self.model)
