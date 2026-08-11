@@ -64,7 +64,7 @@ Môi trường: Python 3.11.15, virtualenv `.venv`, đủ `requirements.txt`; La
   └─ llm.generate   153 ms
   ```
 
-  *Còn thiếu:* ảnh chụp waterfall trên Langfuse UI.
+  Ảnh waterfall: [evidence/cp3-rag-waterfall.png](evidence/cp3-rag-waterfall.png).
 
 - **Giải thích một span đáng chú ý:** `rag.retrieve` chiếm 2500/3548 ms (~70 %) trong khi `llm.generate` chỉ 153 ms. Nếu không tách span, cả request chỉ hiện thành một khối 3548 ms và rất dễ kết luận nhầm là "LLM chậm" — đây chính là lý do phải bọc span cho từng sub-component chứ không chỉ đo ở tầng API.
 
@@ -176,7 +176,7 @@ Ba alert symptom-based trong [`config/alert_rules.yaml`](../config/alert_rules.y
 - **Root cause:** incident `rag_slow` chèn delay 2.5 giây vào bước retrieval trong `app/mock_rag.py`. RAG là span chiếm gần như toàn bộ thời gian, **không phải** LLM — `llm.generate` chỉ 153 ms.
 - **Fix action:** đặt timeout + retry có giới hạn cho retrieval, cache kết quả phù hợp, và trả fallback an toàn khi retrieval vượt ngân sách thời gian.
 - **Preventive measure:** alert P95 riêng cho span RAG (không chỉ P95 tổng), và synthetic probe cho feature `monitoring`.
-- Evidence: [`evidence/cp3-challenge-evidence.md`](evidence/cp3-challenge-evidence.md), [`docs/CP3_QA_INVESTIGATION.md`](../docs/CP3_QA_INVESTIGATION.md). *Còn thiếu:* screenshot metric, waterfall và log.
+- Evidence: [`evidence/cp3-challenge-evidence.md`](evidence/cp3-challenge-evidence.md), [`docs/CP3_QA_INVESTIGATION.md`](../docs/CP3_QA_INVESTIGATION.md), và 4 ảnh do E chụp: [metrics](evidence/cp3-metrics.png) · [waterfall RAG](evidence/cp3-rag-waterfall.png) · [log correlation](evidence/cp3-log-correlation.png) · [load test](evidence/cp3-load-test.png).
 
 **Luồng Metrics → Traces → Logs khớp nhau ở cả ba lớp:**
 
@@ -209,5 +209,5 @@ python scripts/load_test.py --challenge --concurrency 5
 
 1. **Prompt versioning (mục 4) — chưa ai làm.** Tạo prompt `day13-chat` v1/v2 trên Langfuse, chạy hai label, promote rồi rollback `production`, lưu trace ID. Đây là mục trống duy nhất còn lại và đang kéo điểm A1.
 2. **Thống nhất ngưỡng error rate** giữa alert (`> 5 %`) và SLO/dashboard (`≤ 2 %`) — xem cảnh báo ở mục 5.6.
-3. Chụp bổ sung ảnh còn thiếu theo [docs/grading-evidence.md](../docs/grading-evidence.md): danh sách ≥ 10 traces, trace waterfall trên Langfuse UI, hai prompt version, thao tác rollback, và ảnh metric/log của CP3.
+3. Chụp bổ sung ảnh còn thiếu theo [docs/grading-evidence.md](../docs/grading-evidence.md): danh sách ≥ 10 traces, hai prompt version và thao tác rollback. (Ảnh CP3 và waterfall đã có từ commit `92b7ed4` của E.)
 4. Cập nhật commit SHA cuối vào mục 1 sau khi merge xong toàn nhóm.
