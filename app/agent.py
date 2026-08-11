@@ -26,7 +26,9 @@ class LabAgent:
         self.model = model
         self.llm = FakeLLM(model=model)
 
-    @observe(as_type="generation", capture_input=False, capture_output=False)
+    # The agent coordinates the request; the actual model call is traced separately
+    # in FakeLLM.generate. This keeps the waterfall useful for incident analysis.
+    @observe(name="agent.run", as_type="chain", capture_input=False, capture_output=False)
     def run(self, user_id: str, feature: str, session_id: str, message: str) -> AgentResult:
         started = time.perf_counter()
         docs = retrieve(message)
