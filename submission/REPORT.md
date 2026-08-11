@@ -211,3 +211,30 @@ python scripts/load_test.py --challenge --concurrency 5
 2. **Thống nhất ngưỡng error rate** giữa alert (`> 5 %`) và SLO/dashboard (`≤ 2 %`) — xem cảnh báo ở mục 5.6.
 3. Chụp bổ sung ảnh còn thiếu theo [docs/grading-evidence.md](../docs/grading-evidence.md): danh sách ≥ 10 traces, hai prompt version và thao tác rollback. (Ảnh CP3 và waterfall đã có từ commit `92b7ed4` của E.)
 4. Cập nhật commit SHA cuối vào mục 1 sau khi merge xong toàn nhóm.
+
+## 8. Cost optimization, audit log và automation
+
+### Cost optimization
+
+Incident `cost_spike` làm output tokens tăng gấp 4 lần. Đã triển khai cost guard bằng biến môi trường `MAX_OUTPUT_TOKENS=180` để giới hạn completion tokens trước khi tính chi phí.
+
+| Đo lường | Total cost | Output tokens |
+|---|---:|---:|
+| Before — cap 720 | `$0.0350` | `2296` |
+| After — cap 180 | `$0.0140` | `900` |
+
+Kết quả: chi phí giảm khoảng `60%` trên cùng 5 challenge queries khi `cost_spike` được bật.
+
+### Audit log
+
+Các sự kiện enable/disable incident được ghi riêng vào `data/audit.jsonl` thông qua `AUDIT_LOG_PATH`, không trộn với application logs.
+
+### Custom automation
+
+Chạy anomaly detector bằng:
+
+```bash
+python scripts/detect_anomalies.py
+```
+
+Script phát hiện JSONL không hợp lệ, PII có thể bị rò rỉ, latency vượt SLO và error events.

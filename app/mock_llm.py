@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import random
 import time
+import os
 from dataclasses import dataclass
 from typing import Any
 
@@ -41,6 +42,9 @@ class FakeLLM:
         output_tokens = random.randint(80, 180)
         if STATE["cost_spike"]:
             output_tokens *= 4
+        # Cost guard: cap completion tokens before calculating billable cost.
+        max_output_tokens = int(os.getenv("MAX_OUTPUT_TOKENS", "720"))
+        output_tokens = min(output_tokens, max_output_tokens)
         answer = (
             "Starter answer. Teams should improve this output logic and add better quality checks. "
             "Use retrieved context and keep responses concise."
