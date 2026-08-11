@@ -4,7 +4,7 @@
 
 - Tên nhóm: **Spiderman** (K4)
 - Repository URL: https://github.com/stephhoang30/Day13-K4-Spiderman-Observability
-- Commit SHA cuối: `21c53fda749a3cf72c97443bc22866eb730f04c2` trên `main` (gộp đủ phần việc của cả 5 thành viên). Nếu nhóm còn commit thêm, lấy SHA mới nhất bằng `git rev-parse HEAD`.
+- Commit SHA cuối: `9e9ffb3` trên `main` (gộp đủ phần việc của cả 5 thành viên; commit chứa thay đổi alert threshold).
 - Số liệu dashboard và log trong báo cáo được đo tại `d3ce6a5a78616e5bd59a34f7b425a065a03bc938`; các commit sau đó không sinh thêm log nên số liệu vẫn đúng.
 - Thành viên và vai trò:
 
@@ -159,10 +159,10 @@ Ba alert symptom-based trong [`config/alert_rules.yaml`](../config/alert_rules.y
 | Alert | Severity | Điều kiện | Owner |
 |---|---|---|---|
 | `high_latency_p95` | warning | `latency_p95 > 3000ms for 5 minutes` | on-call-engineer |
-| `elevated_error_rate` | critical | `error_rate_pct > 5 for 3 minutes` | on-call-engineer |
+| `elevated_error_rate` | critical | `error_rate_pct > 2 for 3 minutes` | on-call-engineer |
 | `cost_budget_exceeded` | warning | `daily_cost_usd > 2.5` | team-lead |
 
-> ⚠️ **Điểm lệch ngưỡng cần nhóm thống nhất (C phát hiện khi đối chiếu contract):** panel `errors` và SLO `error_rate_pct` đều đặt ngưỡng **2 %**, nhưng alert `elevated_error_rate` chỉ bắn khi **> 5 %**. Vùng 2–5 % là điểm mù: SLO đã vỡ và error budget đang bị đốt nhưng không ai được báo. Đề xuất hạ điều kiện alert về `> 2` cho khớp SLO, hoặc nếu giữ 5 % để giảm nhiễu thì phải ghi rõ trong runbook rằng 2–5 % được xử lý bằng error-budget review theo tuần chứ không page.
+> Ngưỡng alert `elevated_error_rate` đã thống nhất ở **> 2 %**, khớp với SLO và dashboard `error_rate_pct ≤ 2 %`; không còn vùng mù 2–5 %.
 
 ## 6. Điều tra challenge
 
@@ -208,7 +208,7 @@ python scripts/load_test.py --challenge --concurrency 5
 ### Việc còn lại trước khi nộp
 
 1. **Prompt versioning (mục 4) — chưa ai làm.** Tạo prompt `day13-chat` v1/v2 trên Langfuse, chạy hai label, promote rồi rollback `production`, lưu trace ID. Đây là mục trống duy nhất còn lại và đang kéo điểm A1.
-2. **Thống nhất ngưỡng error rate** giữa alert (`> 5 %`) và SLO/dashboard (`≤ 2 %`) — xem cảnh báo ở mục 5.6.
+2. **Đã thống nhất ngưỡng error rate** giữa alert (`> 2 %`) và SLO/dashboard (`≤ 2 %`).
 3. Chụp bổ sung ảnh còn thiếu theo [docs/grading-evidence.md](../docs/grading-evidence.md): danh sách ≥ 10 traces, hai prompt version và thao tác rollback. (Ảnh CP3 và waterfall đã có từ commit `92b7ed4` của E.)
 4. Cập nhật commit SHA cuối vào mục 1 sau khi merge xong toàn nhóm.
 
