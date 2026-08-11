@@ -4,8 +4,8 @@
 
 - Tên nhóm: **Spiderman** (K4)
 - Repository URL: https://github.com/stephhoang30/Day13-K4-Spiderman-Observability
-- Commit SHA cuối: `<điền SHA sau commit cuối>` — evidence trong báo cáo này được thu thập tại `d3ce6a5a78616e5bd59a34f7b425a065a03bc938`
-- Branch làm bài của C: `stephHoang30`
+- Commit SHA cuối: `21c53fda749a3cf72c97443bc22866eb730f04c2` trên `main` (gộp đủ phần việc của cả 5 thành viên). Nếu nhóm còn commit thêm, lấy SHA mới nhất bằng `git rev-parse HEAD`.
+- Số liệu dashboard và log trong báo cáo được đo tại `d3ce6a5a78616e5bd59a34f7b425a065a03bc938`; các commit sau đó không sinh thêm log nên số liệu vẫn đúng.
 - Thành viên và vai trò:
 
 | Mã | Họ tên | MSSV | GitHub | Vai trò | Phạm vi |
