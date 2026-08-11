@@ -54,3 +54,30 @@ Với mỗi thành viên, ghi rõ nhiệm vụ và link commit/PR tương ứng.
 | Thành viên | Phần việc | Commit/PR | Điều đã học |
 |---|---|---|---|
 | | | | |
+
+## 9. Cost optimization, audit log và automation
+
+### Cost optimization
+
+Incident `cost_spike` làm output tokens tăng gấp 4 lần. Đã triển khai cost guard bằng biến môi trường `MAX_OUTPUT_TOKENS=180` để giới hạn completion tokens trước khi tính chi phí.
+
+| Đo lường | Total cost | Output tokens |
+|---|---:|---:|
+| Before — cap 720 | `$0.0350` | `2296` |
+| After — cap 180 | `$0.0140` | `900` |
+
+Kết quả: chi phí giảm khoảng `60%` trên cùng 5 challenge queries khi `cost_spike` được bật.
+
+### Audit log
+
+Các sự kiện enable/disable incident được ghi riêng vào `data/audit.jsonl` thông qua `AUDIT_LOG_PATH`, không trộn với application logs.
+
+### Custom automation
+
+Chạy anomaly detector bằng:
+
+```bash
+python scripts/detect_anomalies.py
+```
+
+Script phát hiện JSONL không hợp lệ, PII có thể bị rò rỉ, latency vượt SLO và error events.
