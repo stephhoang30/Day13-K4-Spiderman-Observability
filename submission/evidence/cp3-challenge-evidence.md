@@ -41,3 +41,10 @@ generation.
 - Remaining prompt-version evidence: the configured Langfuse project still does not
   contain `day13-chat:production`, so the application records prompt fallback until
   that shared prompt is created or the local `.env` is pointed at the shared project.
+
+## Screenshots
+
+- `cp3-metrics.png`: metrics response after the load test.
+- `cp3-rag-waterfall.png`: Langfuse waterfall for the selected challenge trace.
+- `cp3-log-correlation.png`: log correlation evidence.
+- `cp3-load-test.png`: terminal output of the official load test.

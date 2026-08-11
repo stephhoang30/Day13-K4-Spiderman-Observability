@@ -45,7 +45,7 @@
 - Root cause: incident `rag_slow` tạo delay 2.5 giây trong retrieval; RAG là span chiếm thời gian chính, không phải LLM.
 - Fix action: thêm timeout/retry có giới hạn cho retrieval, cache kết quả phù hợp và fallback an toàn khi quá ngân sách thời gian.
 - Preventive measure: alert p95 cho RAG span và synthetic probe cho feature `monitoring`.
-- Evidence: [`evidence/cp3-challenge-evidence.md`](evidence/cp3-challenge-evidence.md). Cần bổ sung screenshot metric, waterfall và log vào cùng thư mục trước khi nộp.
+- Evidence: [`evidence/cp3-challenge-evidence.md`](evidence/cp3-challenge-evidence.md), [`evidence/cp3-metrics.png`](evidence/cp3-metrics.png), [`evidence/cp3-rag-waterfall.png`](evidence/cp3-rag-waterfall.png), [`evidence/cp3-log-correlation.png`](evidence/cp3-log-correlation.png), [`evidence/cp3-load-test.png`](evidence/cp3-load-test.png).
 
 ## 7. Đóng góp cá nhân
 
