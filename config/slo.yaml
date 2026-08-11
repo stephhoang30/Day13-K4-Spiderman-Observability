@@ -1,16 +1,36 @@
 service: day13-observability-lab
+
+# Cửa sổ thời gian dùng để tính SLO và Error Budget.
+# 28d = 28 ngày gần nhất.
 window: 28d
+
+# SLI (Service Level Indicator) là chỉ số dùng để đo chất lượng service.
 slis:
+  # Độ trễ của 95% request nhanh nhất (P95 latency).
   latency_p95_ms:
+    # P95 phải thấp hơn 3.000 ms, tương đương 3 giây.
     objective: 3000
+    # Ít nhất 99,5% request phải đạt objective này.
     target: 99.5
-    note: Replace with your group's target
+    note: P95 latency must remain below 3 seconds for at least 99.5% of requests.
+
+  # Tỷ lệ request bị lỗi; càng thấp càng tốt.
   error_rate_pct:
+    # Error rate phải thấp hơn 2%.
     objective: 2
+    # Mục tiêu đạt chuẩn trong 99% thời gian/cửa sổ đo.
     target: 99.0
+
+  # Tổng chi phí dự kiến của service trong một ngày.
   daily_cost_usd:
+    # Chi phí mục tiêu không vượt quá 2,5 USD/ngày.
     objective: 2.5
+    # Cost SLO là hard budget: yêu cầu đạt 100%.
     target: 100.0
+
+  # Điểm đánh giá chất lượng trung bình của câu trả lời AI.
   quality_score_avg:
+    # Quality score trung bình phải từ 0,75 trở lên.
     objective: 0.75
+    # Ít nhất 95% kết quả đo phải đạt ngưỡng chất lượng.
     target: 95.0
