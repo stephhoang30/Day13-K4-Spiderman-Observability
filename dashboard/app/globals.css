@@ -1,0 +1,74 @@
+/*
+ * Day 13 AI Observability — light appearance only.
+ * Không có dark mode và không có prefers-color-scheme: dark.
+ * Palette bám thương hiệu VinUni: đỏ #c72127, xanh #134d8b.
+ */
+
+:root {
+  color-scheme: light;
+
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --surface-soft: #fafbfc;
+  --border: #e3e6ea;
+  --border-strong: #cfd5dd;
+
+  --text: #16181d;
+  --text-soft: #3d4450;
+  --muted: #67707d;
+
+  --brand-red: #c72127;
+  --brand-red-soft: #fdecec;
+  --brand-blue: #134d8b;
+  --brand-blue-soft: #e9f0f8;
+  --brand-blue-mid: #2f6fb0;
+
+  --pass: #0a7a48;
+  --pass-soft: #e7f5ee;
+
+  --grid: #eceff3;
+  --axis: #b9c1cb;
+
+  --radius: 12px;
+  --shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.06);
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+code,
+.mono {
+  font-family: var(--font-mono);
+}
+
+svg text {
+  font-family: var(--font-sans);
+}

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 613 613" width="613" height="613">
+  <!-- Tam giác đỏ: cân, hai cạnh xiên đúng 45° -->
+  <polygon fill="#c72127" points="126,115 213.5,202.5 126,290"/>
+  <!-- Biểu tượng V: mọi cạnh 45° hoặc dọc, khe đối xứng quanh x=306 -->
+  <polygon fill="#134d8b" points="486,113 486,296 306,476 133.5,303.5 225,212 306,293 387,212"/>
+</svg>

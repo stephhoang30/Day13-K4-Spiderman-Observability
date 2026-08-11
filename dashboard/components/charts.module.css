@@ -1,0 +1,56 @@
+.chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.axisLabel {
+  font-size: 10px;
+  fill: var(--muted);
+}
+
+.tickLabel {
+  font-size: 10px;
+  fill: var(--muted);
+}
+
+.valueLabel {
+  font-size: 12px;
+  font-weight: 700;
+  fill: var(--text);
+}
+
+.catLabel {
+  font-size: 11px;
+  font-weight: 600;
+  fill: var(--text-soft);
+}
+
+.sloLabel {
+  font-size: 10px;
+  font-weight: 700;
+  fill: var(--brand-red);
+  letter-spacing: 0.02em;
+}
+
+.grid {
+  stroke: var(--grid);
+  stroke-width: 1;
+}
+
+.axis {
+  stroke: var(--axis);
+  stroke-width: 1;
+}
+
+.sloLine {
+  stroke: var(--brand-red);
+  stroke-width: 1.6;
+  stroke-dasharray: 6 4;
+}
+
+.emptyNote {
+  font-size: 11px;
+  fill: var(--muted);
+}

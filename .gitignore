@@ -7,3 +7,11 @@ data/audit.jsonl
 .env
 .pytest_cache/
 .antigravity/
+
+# Dashboard (Next.js)
+node_modules/
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+npm-debug.log*
