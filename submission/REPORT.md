@@ -95,6 +95,17 @@ HỢP LỆ: 6/6 panel có trong dashboard contract.
 
 Ảnh: [evidence/dashboard.png](evidence/dashboard.png) — nhìn được tên panel, đơn vị, time range 60 phút, auto refresh 30 giây, threshold/SLO line và trạng thái PASS/BREACH của từng panel.
 
+**Cập nhật thời gian thực** — ảnh: [evidence/dashboard-realtime.png](evidence/dashboard-realtime.png). Dashboard chạy song song hai đường lấy dữ liệu:
+
+| Đường | Endpoint | Khi nào cập nhật |
+|---|---|---|
+| Trực tiếp | `/api/stream` (Server-Sent Events) | ngay khi `data/logs.jsonl` đổi (poll mtime/size mỗi 400 ms) |
+| Bảo đảm | `/api/metrics` | mỗi 30 giây, đúng `dashboard.refresh_seconds` của contract |
+
+Polling **không** bị tắt khi SSE hoạt động — nó là lưới an toàn, stream chết thì dashboard vẫn đúng sau tối đa 30 giây, và contract `refresh_seconds: 30` vẫn được tôn trọng. Chip header hiện `LIVE SSE` hoặc `OFFLINE polling` để biết đang chạy đường nào.
+
+Panel **"Log đang chảy vào"** hiển thị từng dòng log vừa xuất hiện kèm correlation ID, feature, latency và cost. Khi demo, chạy `python scripts/load_test.py --concurrency 5` là thấy dòng chảy vào ngay — bằng chứng trực quan rằng dashboard đọc log thật chứ không phải dữ liệu dựng sẵn.
+
 Ngoài 6 panel, trang có thêm lớp giải thích dùng khi demo trước lớp — ảnh: [evidence/dashboard-cach-do.png](evidence/dashboard-cach-do.png):
 
 - **Sơ đồ pipeline 8 chặng** từ `POST /chat` → gán correlation ID → agent xử lý → scrub PII + render JSON → ghi `data/logs.jsonl` → cắt cửa sổ 60 phút → tổng hợp 6 panel → so threshold. Mỗi chặng hiện số thật đang chảy qua và trỏ đúng file chịu trách nhiệm, bấm vào xem chặng đó làm gì. Có nút chạy demo tự động qua 8 chặng.
@@ -201,7 +212,7 @@ python scripts/load_test.py --challenge --concurrency 5
 |---|---|---|---|
 | A — Nguyễn Quý Dương | `app/middleware.py`: `clear_contextvars()`, sinh correlation ID `req-<8 hex>` (ưu tiên header `x-request-id`), bind vào structlog, trả header `x-request-id` + `x-response-time-ms` | `ed10f83` | |
 | B — Hồ Văn Tâm | `app/logging_config.py` (đăng ký `scrub_event` trước JSONRenderer), `app/pii.py` (thêm `passport`, `address_vn`), `app/main.py` (log enrichment `user_id_hash`/`session_id`/`feature`/`model`/`env`) | `7433995`, `76de046`, `d3ce6a5`, `fc34782` | |
-| C — Hoàng Công Thành | `requests_received()` / `error_rate_pct()` + 3 field mới trong `snapshot()` ([app/metrics.py](../app/metrics.py)); 4 test mới ([tests/test_metrics.py](../tests/test_metrics.py)); [scripts/dashboard_metrics.py](../scripts/dashboard_metrics.py) tính 6 panel từ log để đối chiếu; dashboard Next.js 6 panel + lớp pipeline giải thích cách đo ([dashboard/](../dashboard)); thu thập evidence dashboard | `41d9fff`, `306afaa`, `85859ef`, `3c789b9` | Trung bình che mất sự cố: khi `rag_slow` bật, P50 chỉ nhích nhẹ (1068 ms) còn P95 vọt lên 3653 ms — chỉ percentile cao mới lộ tail latency. Và một chỉ số chỉ đáng tin khi đo được từ hai nguồn độc lập (counter in-memory và file log) mà vẫn ra cùng kết quả. Ngoài ra, threshold phải nhất quán giữa dashboard, SLO và alert — lệch nhau thì sinh ra vùng mù không ai được báo. |
+| C — Hoàng Công Thành | `requests_received()` / `error_rate_pct()` + 3 field mới trong `snapshot()` ([app/metrics.py](../app/metrics.py)); 4 test mới ([tests/test_metrics.py](../tests/test_metrics.py)); [scripts/dashboard_metrics.py](../scripts/dashboard_metrics.py) tính 6 panel từ log để đối chiếu; dashboard Next.js 6 panel + lớp pipeline giải thích cách đo + cập nhật thời gian thực bằng SSE ([dashboard/](../dashboard)); phát hiện lệch ngưỡng error rate giữa alert và SLO; thu thập evidence dashboard | `41d9fff`, `306afaa`, `85859ef`, `3c789b9` | Trung bình che mất sự cố: khi `rag_slow` bật, P50 chỉ nhích nhẹ (1068 ms) còn P95 vọt lên 3653 ms — chỉ percentile cao mới lộ tail latency. Và một chỉ số chỉ đáng tin khi đo được từ hai nguồn độc lập (counter in-memory và file log) mà vẫn ra cùng kết quả. Ngoài ra, threshold phải nhất quán giữa dashboard, SLO và alert — lệch nhau thì sinh ra vùng mù không ai được báo. |
 | D — Nguyễn Hoàng Bảo Minh | `config/slo.yaml` (4 SLI kèm giải thích), `config/alert_rules.yaml` (3 alert symptom-based), `docs/alerts.md` (runbook); **bonus:** cost guard `MAX_OUTPUT_TOKENS`, audit log riêng (`app/audit.py` → `data/audit.jsonl`), anomaly detector (`scripts/detect_anomalies.py`) | `29b0244`, `f5cf5c5` | |
 | E — Trần Văn Ngọc | Bọc span RAG/LLM (`app/agent.py`, `app/mock_rag.py`, `app/mock_llm.py`, `tests/test_tracing_adapter.py`); điều tra CP3 và nối Metrics → Traces → Logs; `docs/CP3_QA_INVESTIGATION.md`, `submission/evidence/cp3-challenge-evidence.md` | `a7d39da`, `625bb6d`, `92b7ed4` | |
 
