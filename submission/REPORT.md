@@ -25,7 +25,7 @@
 | Tổng số traces | **159** trên Langfuse Cloud | Vượt yêu cầu tối thiểu 10. `tracing_enabled=true` ở `/health`; đếm bằng `client.api.trace.list()` |
 | Số PII leak còn lại | **0** | [evidence/pii_redaction.txt](evidence/pii_redaction.txt) |
 | `validate_dashboard.py` | `HỢP LỆ: 6/6 panel` | [evidence/validate_dashboard.txt](evidence/validate_dashboard.txt) |
-| `python -m pytest -q` | 26 passed | [evidence/validate_dashboard.txt](evidence/validate_dashboard.txt) |
+| `python -m pytest -q` | 27 passed | [evidence/validate_dashboard.txt](evidence/validate_dashboard.txt) |
 | Dashboard | Next.js trong [`dashboard/`](../dashboard) | [evidence/dashboard.png](evidence/dashboard.png) |
 
 Môi trường: Python 3.11.15, virtualenv `.venv`, đủ `requirements.txt`; Langfuse Cloud (`https://cloud.langfuse.com`), `auth_check() == True`; Node 22 cho dashboard.
