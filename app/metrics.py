@@ -28,6 +28,19 @@ def record_error(error_type: str) -> None:
 
 
 
+def requests_received() -> int:
+    """Tổng request đã nhận = thành công + thất bại (khớp event request_received)."""
+    return TRAFFIC + sum(ERRORS.values())
+
+
+def error_rate_pct() -> float:
+    """count(request_failed) / count(request_received) * 100 — SLI của alert ChatErrorRateBreach."""
+    received = requests_received()
+    if received == 0:
+        return 0.0
+    return round(sum(ERRORS.values()) / received * 100, 2)
+
+
 def percentile(values: list[int], p: int) -> float:
     if not values:
         return 0.0
@@ -47,6 +60,9 @@ def snapshot() -> dict:
         "total_cost_usd": round(sum(REQUEST_COSTS), 4),
         "tokens_in_total": sum(REQUEST_TOKENS_IN),
         "tokens_out_total": sum(REQUEST_TOKENS_OUT),
+        "requests_received": requests_received(),
+        "errors_total": sum(ERRORS.values()),
+        "error_rate_pct": error_rate_pct(),
         "error_breakdown": dict(ERRORS),
         "quality_avg": round(mean(QUALITY_SCORES), 4) if QUALITY_SCORES else 0.0,
     }
