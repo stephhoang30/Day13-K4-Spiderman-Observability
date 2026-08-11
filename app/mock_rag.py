@@ -3,6 +3,7 @@ from __future__ import annotations
 import time
 
 from .incidents import STATE
+from .tracing import observe
 
 CORPUS = {
     "refund": ["Refunds are available within 7 days with proof of purchase."],
@@ -11,7 +12,13 @@ CORPUS = {
 }
 
 
+@observe(name="rag.retrieve", as_type="tool", capture_input=False, capture_output=False)
 def retrieve(message: str) -> list[str]:
+    """Retrieve context as an explicit child span of the agent trace.
+
+    Inputs and retrieved documents are deliberately not captured because they may
+    contain user content. Duration and exception status remain visible in Langfuse.
+    """
     if STATE["tool_fail"]:
         raise RuntimeError("Vector store timeout")
     if STATE["rag_slow"]:
