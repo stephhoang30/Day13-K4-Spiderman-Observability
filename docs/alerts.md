@@ -21,7 +21,7 @@ Các alert dưới đây dựa trên triệu chứng người dùng hoặc SLO, 
 - **Tên:** `elevated_error_rate`
 - **Severity:** `critical`
 - **SLI/SLO liên quan:** `error_rate_pct`; error rate phải dưới `2%` với target `99.0%`.
-- **Điều kiện kích hoạt:** `error_rate_pct > 5 for 3 minutes`.
+- **Điều kiện kích hoạt:** `error_rate_pct > 2 for 3 minutes`.
 - **Ảnh hưởng tới người dùng:** Nhiều request thất bại, người dùng không nhận được câu trả lời hoặc phải thử lại nhiều lần.
 - **Ba bước kiểm tra đầu tiên:**
   1. Xác nhận tỷ lệ lỗi và số request bị ảnh hưởng trên dashboard; kiểm tra alert có phải do traffic tăng hoặc dữ liệu thiếu không.
