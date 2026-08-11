@@ -1,0 +1,31 @@
+$ python scripts/dashboard_metrics.py
+Dashboard: Day 13 AI Observability
+Time range: 2026-08-11T06:58:33.711587+00:00 -> 2026-08-11T07:58:33.711587+00:00 (60 phút), refresh 30s
+Log records trong cửa sổ: 121
+
+[latency] Latency percentiles (ms)
+  p50=1068 p95=3653 p99=3769 n=52
+  BREACH (threshold p95 lte 3000)
+
+[traffic] Request traffic (requests_per_minute)
+  count=58 phút có dữ liệu=6 rate=9.67/phút
+  theo phút: {'07:53': 11, '07:54': 19, '07:55': 7, '07:56': 10, '07:57': 10, '07:58': 1}
+  PASS (threshold rate_per_minute gte 1)
+
+[errors] Error rate and breakdown (percent)
+  request_failed=6 request_received=58 error_rate=10.34%
+  breakdown: {'RuntimeError': 6}
+  BREACH (threshold error_rate_pct lte 2)
+
+[cost] Cost over time (usd)
+  total=0.109161 USD
+  theo phút: {'07:53': 0.024216, '07:54': 0.036378, '07:55': 0.003897, '07:56': 0.021405, '07:57': 0.020985, '07:58': 0.00228}
+  PASS (threshold total lte 2.5)
+
+[tokens] Input and output tokens (tokens)
+  tokens_in=1707 tokens_out=6936
+  PASS (threshold sum_by_field lte 50000)
+
+[quality] Quality proxy (score_0_to_1)
+  mean=0.8788 n=52
+  PASS (threshold mean gte 0.75)

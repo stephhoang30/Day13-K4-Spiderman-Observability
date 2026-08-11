@@ -1,0 +1,9 @@
+# Correlation ID xuyên suốt một request (owner: A — Nguyễn Quý Dương)
+# Cùng một correlation_id xuất hiện ở cả request_received và response_sent:
+# correlation_id = req-eda6e648
+{"service": "api", "payload": {"message_preview": "How should alerts be designed?"}, "event": "request_received", "user_id_hash": "105a9cef3903", "feature": "qa", "env": "dev", "model": "claude-sonnet-4-5", "correlation_id": "req-eda6e648", "session_id": "s10", "level": "info", "ts": "2026-08-11T07:57:21.406243Z"}
+{"service": "api", "latency_ms": 934, "tokens_in": 28, "tokens_out": 151, "cost_usd": 0.002349, "quality_score": 0.9, "payload": {"answer_preview": "Starter answer. Teams should improve this output logic and add better quality ch..."}, "event": "response_sent", "user_id_hash": "105a9cef3903", "feature": "qa", "env": "dev", "model": "claude-sonnet-4-5", "correlation_id": "req-eda6e648", "session_id": "s10", "level": "info", "ts": "2026-08-11T07:57:22.341236Z"}
+
+# Response header tương ứng:
+x-request-id: req-982c9774
+x-response-time-ms: 1338.237999996636

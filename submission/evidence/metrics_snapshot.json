@@ -1,0 +1,17 @@
+{
+    "traffic": 52,
+    "latency_p50": 1068.0,
+    "latency_p95": 3653.0,
+    "latency_p99": 3769.0,
+    "avg_cost_usd": 0.0021,
+    "total_cost_usd": 0.1092,
+    "tokens_in_total": 1707,
+    "tokens_out_total": 6936,
+    "requests_received": 58,
+    "errors_total": 6,
+    "error_rate_pct": 10.34,
+    "error_breakdown": {
+        "RuntimeError": 6
+    },
+    "quality_avg": 0.8788
+}

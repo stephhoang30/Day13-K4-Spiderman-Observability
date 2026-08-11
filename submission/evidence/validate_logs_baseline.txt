@@ -1,0 +1,15 @@
+$ python scripts/validate_logs.py   # baseline CP0 — TODO của role A/B chưa hoàn thiện
+--- Lab Verification Results ---
+Total log records analyzed: 118
+Records with missing required fields: 112
+Records with missing enrichment (context): 112
+Unique correlation IDs found: 0
+Potential PII leaks detected: 0
+
+--- Grading Scorecard (Estimates) ---
+- [FAILED] Missing required fields (ts, level, etc.)
+- [FAILED] Correlation ID propagation (less than 2 unique IDs)
+- [FAILED] Log enrichment (missing user_id_hash, etc.)
++ [PASSED] PII scrubbing
+
+Estimated Score: 30/100

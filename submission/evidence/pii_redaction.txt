@@ -1,0 +1,11 @@
+# PII đã được redact trong log (owner: B — Hồ Văn Tâm)
+# Input gốc chứa email / số điện thoại / số thẻ (xem data/sample_queries.jsonl),
+# log chỉ còn placeholder [REDACTED_*]:
+{"service": "api", "payload": {"message_preview": "Probe correlation id, email [REDACTED_EMAIL]"}, "event": "request_received", "user_id_hash": "ba9c736f19e7", "feature": "qa", "env": "dev", "model": "claude-sonnet-4-5", "correlation_id": "req-afc3b9d5", "session_id": "probe-s1", "level": "info", "ts": "2026-08-11T07:53:03.666870Z"}
+{"service": "api", "payload": {"message_preview": "What is your refund policy? My email is [REDACTED_EMAIL]"}, "event": "request_received", "user_id_hash": "2055254ee30a", "feature": "qa", "env": "dev", "model": "claude-sonnet-4-5", "correlation_id": "req-ee1f35eb", "session_id": "s01", "level": "info", "ts": "2026-08-11T07:53:16.644437Z"}
+{"service": "api", "payload": {"message_preview": "Here is my phone [REDACTED_PHONE_VN], what should be logged?"}, "event": "request_received", "user_id_hash": "64f6ec689229", "feature": "qa", "env": "dev", "model": "claude-sonnet-4-5", "correlation_id": "req-c07561ce", "session_id": "s05", "level": "info", "ts": "2026-08-11T07:53:21.347060Z"}
+{"service": "api", "payload": {"message_preview": "What is the policy for PII and credit card [REDACTED_CREDIT_CARD]?"}, "event": "request_received", "user_id_hash": "4d14d5d4f719", "feature": "qa", "env": "dev", "model": "claude-sonnet-4-5", "correlation_id": "req-a3cee0d0", "session_id": "s09", "level": "info", "ts": "2026-08-11T07:53:28.863354Z"}
+
+# Quét PII thô trên toàn bộ log: 0 hit
+Potential PII leaks detected: 0
++ [PASSED] PII scrubbing
